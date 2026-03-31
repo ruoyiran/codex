@@ -4409,6 +4409,7 @@ fn test_precedence_fixture_with_o3_profile() -> std::io::Result<()> {
             project_doc_max_bytes: PROJECT_DOC_MAX_BYTES,
             project_doc_fallback_filenames: Vec::new(),
             tool_output_token_limit: None,
+        model_max_output_tokens: None,
             agent_max_threads: DEFAULT_AGENT_MAX_THREADS,
             agent_max_depth: DEFAULT_AGENT_MAX_DEPTH,
             agent_roles: BTreeMap::new(),
@@ -4551,6 +4552,7 @@ fn test_precedence_fixture_with_gpt3_profile() -> std::io::Result<()> {
         project_doc_max_bytes: PROJECT_DOC_MAX_BYTES,
         project_doc_fallback_filenames: Vec::new(),
         tool_output_token_limit: None,
+        model_max_output_tokens: None,
         agent_max_threads: DEFAULT_AGENT_MAX_THREADS,
         agent_max_depth: DEFAULT_AGENT_MAX_DEPTH,
         agent_roles: BTreeMap::new(),
@@ -4691,6 +4693,7 @@ fn test_precedence_fixture_with_zdr_profile() -> std::io::Result<()> {
         project_doc_max_bytes: PROJECT_DOC_MAX_BYTES,
         project_doc_fallback_filenames: Vec::new(),
         tool_output_token_limit: None,
+        model_max_output_tokens: None,
         agent_max_threads: DEFAULT_AGENT_MAX_THREADS,
         agent_max_depth: DEFAULT_AGENT_MAX_DEPTH,
         agent_roles: BTreeMap::new(),
@@ -4817,6 +4820,7 @@ fn test_precedence_fixture_with_gpt5_profile() -> std::io::Result<()> {
         project_doc_max_bytes: PROJECT_DOC_MAX_BYTES,
         project_doc_fallback_filenames: Vec::new(),
         tool_output_token_limit: None,
+        model_max_output_tokens: None,
         agent_max_threads: DEFAULT_AGENT_MAX_THREADS,
         agent_max_depth: DEFAULT_AGENT_MAX_DEPTH,
         agent_roles: BTreeMap::new(),
@@ -5251,6 +5255,32 @@ fn derive_sandbox_policy_preserves_windows_downgrade_for_unsupported_fallback() 
         assert_eq!(resolution, SandboxPolicy::new_workspace_write_policy());
     }
     Ok(())
+}
+
+#[test]
+fn model_max_output_tokens_profile_overrides_global() {
+    let mut profiles = std::collections::HashMap::new();
+    profiles.insert(
+        "test-profile".to_string(),
+        ConfigProfile {
+            model_max_output_tokens: Some(1234),
+            ..Default::default()
+        },
+    );
+
+    let config = Config::load_from_base_config_with_overrides(
+        ConfigToml {
+            model_max_output_tokens: Some(5678),
+            profile: Some("test-profile".to_string()),
+            profiles,
+            ..Default::default()
+        },
+        ConfigOverrides::default(),
+        tempdir().expect("tempdir").path().to_path_buf(),
+    )
+    .expect("load config with model_max_output_tokens");
+
+    assert_eq!(config.model_max_output_tokens, Some(1234));
 }
 
 #[test]

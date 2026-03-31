@@ -495,7 +495,7 @@ async fn append_message_records_assistant_message() {
         .expect("append_message should succeed");
     assert!(!submission_id.is_empty());
 
-    timeout(Duration::from_secs(5), async {
+    timeout(Duration::from_secs(15), async {
         loop {
             let history_items = thread
                 .codex

@@ -196,6 +196,61 @@ data: {"id":"resp-1","output":[{"type":"message","role":"assistant","content":[{
 }
 
 #[tokio::test]
+async fn responses_client_sends_wire_session_id_headers() -> Result<()> {
+    let state = RecordingState::default();
+    let transport = RecordingTransport::new(state.clone());
+    let client = ResponsesClient::new(transport, provider("openai"), NoAuth);
+
+    let mut extra_headers = HeaderMap::new();
+    extra_headers.insert("x-test", HeaderValue::from_static("1"));
+    let _stream = client
+        .stream_request(
+            ResponsesApiRequest {
+                model: "gpt-test".to_string(),
+                instructions: "be helpful".to_string(),
+                input: Vec::<ResponseItem>::new(),
+                tools: vec![],
+                tool_choice: "auto".to_string(),
+                parallel_tool_calls: false,
+                reasoning: None,
+                store: false,
+                stream: true,
+                include: vec![],
+                service_tier: None,
+                prompt_cache_key: None,
+                text: None,
+                max_output_tokens: Some(321),
+            },
+            ResponsesOptions {
+                conversation_id: Some("logical-session".to_string()),
+                wire_session_id: Some("wire-session".to_string()),
+                session_source: None,
+                extra_headers,
+                compression: Compression::None,
+                turn_state: None,
+            },
+        )
+        .await?;
+
+    let requests = state.take_stream_requests();
+    assert_eq!(requests.len(), 1);
+    let request = &requests[0];
+    assert_eq!(
+        request.headers.get("session_id"),
+        Some(&HeaderValue::from_static("wire-session"))
+    );
+    assert_eq!(
+        request.headers.get("extra"),
+        Some(&HeaderValue::from_static(
+            "{\"session_id\":\"wire-session\"}"
+        ))
+    );
+    let body = request.body.as_ref().expect("request body");
+    assert_eq!(body.get("max_output_tokens"), Some(&serde_json::json!(321)));
+    Ok(())
+}
+
+#[tokio::test]
 async fn responses_client_uses_responses_path() -> Result<()> {
     let state = RecordingState::default();
     let transport = RecordingTransport::new(state.clone());
@@ -278,6 +333,7 @@ async fn streaming_client_retries_on_transport_error() -> Result<()> {
         service_tier: None,
         prompt_cache_key: None,
         text: None,
+        max_output_tokens: None,
     };
     let client = ResponsesClient::new(transport.clone(), provider, NoAuth);
 
@@ -320,6 +376,7 @@ async fn azure_default_store_attaches_ids_and_headers() -> Result<()> {
         service_tier: None,
         prompt_cache_key: None,
         text: None,
+        max_output_tokens: None,
     };
 
     let mut extra_headers = HeaderMap::new();
@@ -329,6 +386,7 @@ async fn azure_default_store_attaches_ids_and_headers() -> Result<()> {
             request,
             ResponsesOptions {
                 conversation_id: Some("sess_123".into()),
+                wire_session_id: None,
                 session_source: Some(SessionSource::SubAgent(SubAgentSource::Review)),
                 extra_headers,
                 compression: Compression::None,

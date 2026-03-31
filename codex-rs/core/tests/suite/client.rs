@@ -1838,9 +1838,11 @@ async fn azure_responses_request_includes_store_and_reasoning_ids() {
     let client = ModelClient::new(
         /*auth_manager*/ None,
         conversation_id,
+        conversation_id,
         provider.clone(),
         SessionSource::Exec,
         config.model_verbosity,
+        config.model_max_output_tokens,
         /*enable_request_compression*/ false,
         /*include_timing_metrics*/ false,
         /*beta_features_header*/ None,

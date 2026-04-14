@@ -9,8 +9,8 @@ Usage: $0 [debug|release]
 Build the codex binary from the codex-rs workspace.
 
 Arguments:
-  debug    Build the debug binary (default)
-  release  Build the release binary
+  debug    Build the debug binary
+  release  Build the release binary (default)
 
 Examples:
   $0
@@ -19,7 +19,7 @@ Examples:
 EOF
 }
 
-profile="${1:-debug}"
+profile="${1:-release}"
 
 case "$profile" in
   -h|--help)
